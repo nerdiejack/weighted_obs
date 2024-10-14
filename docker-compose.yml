@@ -1,0 +1,93 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.3
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.3
+    ports:
+      - "5003:5000"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.3
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+
+  locust:
+    image: locustio/locust
+    ports:
+      - "8089:8089"
+    depends_on:
+      - flask-app
+    volumes:
+      - ./locustfile.py:/mnt/locustfile.py
+    command: -f /mnt/locustfile.py --host=http://flask-app:5000
+
+  flask-app:
+    build:
+      context: ./app
+    volumes:
+      - ./app:/app
+      - ./pgbench_results:/pgbench_results
+    ports:
+      - "5001:5000"
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
+
+  pgbench-runner:
+    build: ./pgbench-runner
+    volumes:
+      - ./pgbench_results:/pgbench_results
+    depends_on:
+      - postgres
+
+  postgres-exporter:
+    image: bitnami/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@postgres:5432/postgres?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres
+
+  health-calculator:
+    build: ./health-calculator
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./pgbench_results:/pgbench_results
+    depends_on:
+      - prometheus
+      - elasticsearch
+
+volumes:
+  pgbench_results:
+    driver: local

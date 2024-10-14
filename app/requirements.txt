@@ -1,0 +1,4 @@
+Flask
+prometheus_flask_exporter
+requests
+psycopg2-binary

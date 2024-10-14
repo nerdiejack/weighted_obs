@@ -1,0 +1,1 @@
+*/5 * * * * /run_pgbench.sh >> /pgbench_results/pgbench_cron_log.txt 2>&1
