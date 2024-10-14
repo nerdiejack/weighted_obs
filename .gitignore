@@ -1,2 +1,3 @@
 .idea
 pgbench_results/*.txt
+.venv
