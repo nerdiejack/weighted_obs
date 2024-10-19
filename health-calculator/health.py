@@ -3,8 +3,7 @@ import time
 import requests
 import os
 from flask import Flask, jsonify
-from fontTools.merge.util import avg_int
-from prometheus_api_client import PrometheusApiClientException, PrometheusConnect
+from prometheus_api_client import PrometheusConnect
 from threading import Thread
 from kafka import KafkaProducer
 
@@ -19,7 +18,7 @@ BASE_SCORE = 100
 ERROR_WEIGHT = 80
 LATENCY_WEIGHT = 15
 DB_LATENCY_WEIGHT = 5
-APP_NAMES = ['flask-app', 'app1', 'app2', 'app3', 'app4']
+APP_NAMES = ['flask-app:5000', 'app1:5000', 'app2:5000', 'app3:5000', 'app4:5000']
 
 prom = PrometheusConnect(url=PROMETHEUS_URL, disable_ssl=True)
 
@@ -38,9 +37,8 @@ def fetch_prometheus_metric(query):
     return 0.0
 
 def calculate_health(app_name):
-    error_rate_query = f'rate(flask_http_request_total{{app="{app_name}", status="500"}}[5m])'
-    avg_latency_query = (f'rate(flask_http_request_duration_seconds_sum{{app="{app_name}"}}[5m]) / '
-                         f'rate(flask_http_request_duration_seconds_count{{app="{app_name}"}}[5m])')
+    error_rate_query = f'rate(flask_http_request_total{{instance="{app_name}", status="500"}}[5m])'
+    avg_latency_query = f'rate(flask_http_request_duration_seconds_sum{{instance="{app_name}"}}[5m]) / 'f'rate(flask_http_request_duration_seconds_count{{instance="{app_name}"}}[5m])'
 
     error_rate = fetch_prometheus_metric(error_rate_query)
     avg_latency = fetch_prometheus_metric(avg_latency_query)
@@ -102,13 +100,13 @@ def send_metrics_to_kafka(metrics):
 @app.route('/health')
 def health():
     for app_name in APP_NAMES :
-        metrics = calculate_health()
+        metrics = calculate_health(app_name)
         return jsonify(metrics)
 
 def periodic_task():
     while True:
         for app_name in APP_NAMES:
-            metrics = calculate_health()
+            metrics = calculate_health(app_name)
             send_metrics_to_kafka(metrics)
             time.sleep(10)
 

@@ -1,4 +1,4 @@
 Flask
 requests
-prometheus-client
+prometheus-api-client
 kafka-python

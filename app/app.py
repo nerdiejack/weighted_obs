@@ -1,5 +1,3 @@
-from multiprocessing.pool import job_counter
-
 from flask import Flask, Response, jsonify
 from jinja2.compiler import generate
 from prometheus_client import generate_latest

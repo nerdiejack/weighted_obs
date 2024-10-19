@@ -64,6 +64,10 @@ services:
       - "8089:8089"
     depends_on:
       - flask-app
+      - app1
+      - app2
+      - app3
+      - app4
     volumes:
       - ./locustfile.py:/mnt/locustfile.py
     command: -f /mnt/locustfile.py --host=http://flask-app:5000
@@ -76,6 +80,8 @@ services:
       - ./pgbench_results:/pgbench_results
     ports:
       - "5001:5000"
+    depends_on:
+      - prometheus
 
   app1:
     build: ./app1
@@ -131,7 +137,7 @@ services:
       - ./pgbench_results:/pgbench_results
     depends_on:
       - prometheus
-      - elasticsearch
+      - kafka
 
 volumes:
   pgbench_results:
