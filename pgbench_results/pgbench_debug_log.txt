@@ -585,3 +585,4 @@ pgbench run compelte at Sat Oct 19 13:30:12 UTC 2024. Moving results to /pgbench
 pgbench run compelte at Sat Oct 19 13:35:11 UTC 2024. Moving results to /pgbench_results/pgbench_last_result.txt
 pgbench run compelte at Sat Oct 19 13:40:11 UTC 2024. Moving results to /pgbench_results/pgbench_last_result.txt
 pgbench run compelte at Sat Oct 19 13:45:11 UTC 2024. Moving results to /pgbench_results/pgbench_last_result.txt
+pgbench run compelte at Sat Oct 19 13:50:11 UTC 2024. Moving results to /pgbench_results/pgbench_last_result.txt
