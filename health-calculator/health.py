@@ -1,47 +1,28 @@
+import json
 import time
 import requests
 import os
 from flask import Flask, jsonify
 from elasticsearch import Elasticsearch, exceptions
 from threading import Thread
+from kafka import KafkaProducer
 
 
 app = Flask(__name__)
 
 PROMETHEUS_URL = 'http://prometheus:9090/api/v1/query'
-ES_HOST ='http://elasticsearch:9200'
+KAFKA_BROKER = os.getenv('KAFKA_BROKER', 'kafka:9092')
 PG_BENCH_RESULTS_PATH = '/pgbench_results/pgbench_last_result.txt'
-INDEX_NAME = 'health_metrics'
-
+TOPIC_NAME = 'metrics'
 BASE_SCORE = 100
 ERROR_WEIGHT = 80
 LATENCY_WEIGHT = 15
 DB_LATENCY_WEIGHT = 5
 
-es = Elasticsearch([ES_HOST])
-
-def create_index():
-    mappings = {
-        "mappings": {
-            "properties": {
-                "health_score": {"type": "float"},
-                "error_rate": {"type": "float"},
-                "avg_latency": {"type": "float"},
-                "pg_bench_latency": {"type": "float"},
-                "tps_bonus": {"type": "float"},
-                "error_penalty": {"type": "float"},
-                "latency_penalty": {"type": "float"},
-                "db_latency_penalty": {"type": "float"},
-                "timestamp": {"type": "date", "format": "epoch_second"}
-            }
-        }
-    }
-    if not es.indices.exists(index=INDEX_NAME):
-        try:
-            es.indices.create(index=INDEX_NAME, body=mappings)
-            print(f"Index '{INDEX_NAME}' created successfully.")
-        except Exception as e:
-            print(f"Failed to create index '{INDEX_NAME}': {e}")
+producer = KafkaProducer(
+    bootstrap_servers=KAFKA_BROKER,
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
 
 def fetch_metric(query):
     response = requests.get(PROMETHEUS_URL, params={'query': query})
@@ -98,15 +79,16 @@ def calculate_health():
         "timestamp": time.time()
     }
 
-    print(metrics)
+    print(f"Metrics generated: {metrics}")
     return metrics
 
-def send_to_elasticsearch(metrics):
+def send_metrics_to_kafka(metrics):
     try:
-        es.index(index=INDEX_NAME, body=metrics)
-        print("Metrics successfully sent to Elasticsearch.")
+        producer.send(TOPIC_NAME, metrics)
+        producer.flush()
+        print(f"Metrics sent to Kafka: {metrics}")
     except Exception as e:
-        print(f"Failed to send metrics to Elasticsearch: {e}")
+        print(f"Failed to send metrics to Kafka: {e}")
 
 @app.route('/health')
 def health():
@@ -114,11 +96,9 @@ def health():
     return jsonify(metrics)
 
 def periodic_task():
-    time.sleep(20)
-    create_index()
     while True:
         metrics = calculate_health()
-        send_to_elasticsearch(metrics)
+        send_metrics_to_kafka(metrics)
         time.sleep(10)
 
 if __name__ == "__main__":
