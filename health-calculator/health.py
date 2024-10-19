@@ -3,39 +3,47 @@ import time
 import requests
 import os
 from flask import Flask, jsonify
-from elasticsearch import Elasticsearch, exceptions
+from fontTools.merge.util import avg_int
+from prometheus_api_client import PrometheusApiClientException, PrometheusConnect
 from threading import Thread
 from kafka import KafkaProducer
 
 
 app = Flask(__name__)
 
-PROMETHEUS_URL = 'http://prometheus:9090/api/v1/query'
+PROMETHEUS_URL = os.getenv('PROMETHEUS_URL', 'http://prometheus:9090')
 KAFKA_BROKER = os.getenv('KAFKA_BROKER', 'kafka:9092')
 PG_BENCH_RESULTS_PATH = '/pgbench_results/pgbench_last_result.txt'
-TOPIC_NAME = 'metrics'
+TOPIC_NAME = 'health-metrics'
 BASE_SCORE = 100
 ERROR_WEIGHT = 80
 LATENCY_WEIGHT = 15
 DB_LATENCY_WEIGHT = 5
+APP_NAMES = ['flask-app', 'app1', 'app2', 'app3', 'app4']
+
+prom = PrometheusConnect(url=PROMETHEUS_URL, disable_ssl=True)
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BROKER,
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-def fetch_metric(query):
-    response = requests.get(PROMETHEUS_URL, params={'query': query})
-    data = response.json().get('data', {}).get('result', [])
-    if data:
-        return float(data[0]['value'][1])
+def fetch_prometheus_metric(query):
+    try:
+        result = prom.custom_query(query)
+        if result:
+            return float(result[0]['value'][1])
+    except Exception as e:
+        print(f"Error fetching metric: {e}")
     return 0.0
 
-def calculate_health():
-    # rate of HTTP 500 errors
-    error_rate = fetch_metric('rate(flask_http_request_total{status="500"}[5m])')
-    # average http query latency
-    avg_latency = fetch_metric('avg(flask_http_request_duration_seconds_sum / flask_http_request_duration_seconds_count)')
+def calculate_health(app_name):
+    error_rate_query = f'rate(flask_http_request_total{{app="{app_name}", status="500"}}[5m])'
+    avg_latency_query = (f'rate(flask_http_request_duration_seconds_sum{{app="{app_name}"}}[5m]) / '
+                         f'rate(flask_http_request_duration_seconds_count{{app="{app_name}"}}[5m])')
+
+    error_rate = fetch_prometheus_metric(error_rate_query)
+    avg_latency = fetch_prometheus_metric(avg_latency_query)
 
     pg_bench_latency = 1.0
     pg_bench_tps = 10.0
@@ -68,6 +76,7 @@ def calculate_health():
     health_score = max(0, health_score)  # Ensure it doesn't go below
 
     metrics = {
+        "app_name": app_name,
         "health_score": health_score,
         "error_rate": error_rate,
         "avg_latency": avg_latency,
@@ -92,14 +101,16 @@ def send_metrics_to_kafka(metrics):
 
 @app.route('/health')
 def health():
-    metrics = calculate_health()
-    return jsonify(metrics)
+    for app_name in APP_NAMES :
+        metrics = calculate_health()
+        return jsonify(metrics)
 
 def periodic_task():
     while True:
-        metrics = calculate_health()
-        send_metrics_to_kafka(metrics)
-        time.sleep(10)
+        for app_name in APP_NAMES:
+            metrics = calculate_health()
+            send_metrics_to_kafka(metrics)
+            time.sleep(10)
 
 if __name__ == "__main__":
     thread = Thread(target=periodic_task)

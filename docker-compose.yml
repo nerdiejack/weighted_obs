@@ -77,6 +77,26 @@ services:
     ports:
       - "5001:5000"
 
+  app1:
+    build: ./app1
+    depends_on:
+      - prometheus
+
+  app2:
+    build: ./app2
+    depends_on:
+      - prometheus
+
+  app3:
+    build: ./app3
+    depends_on:
+      - prometheus
+
+  app4:
+    build: ./app4
+    depends_on:
+      - prometheus
+
   postgres:
     image: postgres:13
     environment:
