@@ -9,18 +9,18 @@ until pg_isready -h postgres -U user -p 5432; do
 done
 
 # Check if the pgbench tables are initialized
-TABLE_EXISTS=$(psql -U $PGUSER -h $PGHOST -d $DB_NAME -c "\dt pgbench_branches" | grep -q "pgbench_branches"; echo $?)
+TABLE_EXISTS=$(PGPASSWORD='password' psql -U user -h postgres -d $DB_NAME -c "\dt pgbench_branches" | grep -q "pgbench_branches"; echo $?)
 
 if [ "$TABLE_EXISTS" -ne 0 ]; then
     echo "Initializing pgbench tables in database $DB_NAME..."
-    pgbench -i -s $SCALE -U $PGUSER -h $PGHOST -d $DB_NAME
+    PGPASSWORD='password' pgbench -i -s $SCALE -U user -h postgres -d $DB_NAME
 fi
 
 TEMP_FILE="/pgbench_results/pgbench_temp_result.txt"
 FINAL_FILE="/pgbench_results/pgbench_last_result.txt"
 
 echo "Running pgbench on database $DB_NAME..."
-pgbench -T $DURATION -c $SCALE -U $PGUSER -h $PGHOST -d $DB_NAME > $TEMP_FILE 2>&1
+PGPASSWORD='password' pgbench -T $DURATION -c $SCALE -U user -h postgres -d $DB_NAME > $TEMP_FILE 2>&1
 
 if [ $? -eq 0 ]; then
     echo "pgbench run compelte at $(date). Moving results to $FINAL_FILE" >> /pgbench_results/pgbench_debug_log.txt
