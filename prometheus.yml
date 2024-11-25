@@ -1,12 +1,12 @@
 # prometheus.yml
 global:
-  scrape_interval: 15s
+  scrape_interval: 10s
 
 scrape_configs:
-  - job_name: 'flask-app'
+  - job_name: 'flask-apps'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['flask-app:5000']
+      - targets: ['flask-app:5000', 'app2:5000', 'app3:5000', 'app4:5000']
   - job_name: 'postgres'
     metrics_path: '/metrics'
     static_configs:

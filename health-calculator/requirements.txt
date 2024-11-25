@@ -1,3 +1,4 @@
 Flask
 requests
-elasticsearch
+prometheus-api-client
+kafka-python
