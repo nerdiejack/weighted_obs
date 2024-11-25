@@ -1,5 +1,4 @@
 from flask import Flask, Response, jsonify
-from jinja2.compiler import generate
 from prometheus_client import generate_latest
 from prometheus_flask_exporter import PrometheusMetrics
 import requests
@@ -15,6 +14,10 @@ PG_BENCH_RESULTS_PATH = '/pgbench_results/pgbench_last_result.txt'
 # Basic logging setup
 logging.basicConfig(filename='/var/log/app.log', level=logging.INFO)
 
+@app.route("/metrics")
+def metrics_endpoint():
+    return Response(generate_latest(), mimetype="text/plain")
+
 @app.route("/")
 def hello():
     app.logger.info('Serving main endpoint')
@@ -29,7 +32,7 @@ def error():
 def heavy():
     start_time = time.time()
     count = 0
-    while time.time() - start_time < 5:
+    while time.time() - start_time < 3:
         count += 1
     return jsonify({"message": "Completed heavy computation", "iterations": count})
 
@@ -57,9 +60,6 @@ def db_test():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/metrics")
-def metrics_endpoint():
-    return Response(generate_latest(), mimetype="text/plain")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True)

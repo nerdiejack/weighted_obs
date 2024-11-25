@@ -5,6 +5,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import generate_latest
 from flask import Response, Flask, jsonify
 
+
 app = Flask(__name__)
 
 metrics = PrometheusMetrics(app)
