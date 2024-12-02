@@ -20,6 +20,16 @@ services:
     depends_on:
       - zookeeper
 
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:9092"
+      JVM_OPTS: "-Xms32M -Xmx64M"
+    depends_on:
+      - kafka
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.3
     environment:
