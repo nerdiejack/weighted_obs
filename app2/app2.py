@@ -12,7 +12,7 @@ metrics = PrometheusMetrics(app)
 
 @app.route('/process')
 def process_data():
-    process_time = random.uniform(0.1, 0.5)
+    process_time = random.uniform(0.1, 0.2)
     time.sleep(process_time)
     return jsonify({"status": "processing", "time_taken": process_time})
 

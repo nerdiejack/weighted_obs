@@ -2,6 +2,7 @@ import json
 import time
 import requests
 import os
+import random
 from flask import Flask, jsonify
 from prometheus_api_client import PrometheusConnect
 from threading import Thread
@@ -15,10 +16,10 @@ KAFKA_BROKER = os.getenv('KAFKA_BROKER', 'kafka:9092')
 PG_BENCH_RESULTS_PATH = '/pgbench_results/pgbench_last_result.txt'
 TOPIC_NAME = 'health-metrics'
 BASE_SCORE = 100
-ERROR_WEIGHT = 40
-LATENCY_WEIGHT = 15
-DB_LATENCY_WEIGHT = 5
-LATENCY_THRESHOLD = 2.5
+ERROR_WEIGHT = 30
+LATENCY_WEIGHT = 20
+DB_LATENCY_WEIGHT = 10
+LATENCY_THRESHOLD = 5
 APP_NAMES = ['flask-app:5000', 'app2:5000', 'app3:5000', 'app4:5000']
 prom = PrometheusConnect(url=PROMETHEUS_URL, disable_ssl=True)
 
@@ -73,7 +74,7 @@ def calculate_health(app_name):
 
     error_penalty = ERROR_WEIGHT * min(1, error_rate / 4)
     latency_penalty = LATENCY_WEIGHT * min(1, avg_latency / 2)  # Normalizing by dividing by 2
-    db_latency_penalty = DB_LATENCY_WEIGHT * min(1, pg_bench_latency / 0.5)
+    db_latency_penalty = (DB_LATENCY_WEIGHT * min(1, pg_bench_latency / 0.5)  * random.uniform(0.1, 0.5))
     tps_bonus = min(1, pg_bench_tps) / 10
     if avg_latency > LATENCY_THRESHOLD:
         health_score = 0

@@ -3,7 +3,7 @@ from locust import HttpUser, task, between
 class AppUser(HttpUser):
     wait_time = between(1, 2)
 
-    @task(85)
+    @task(89)
     def load_home_app(self):
         self.client.get("http://flask-app:5000/")
 
@@ -15,7 +15,7 @@ class AppUser(HttpUser):
     def load_db_test_app(self):
         self.client.get("http://flask-app:5000/db-test")
 
-    @task(11)
+    @task(4)
     def load_heavy_app(self):
         self.client.get("http://flask-app:5000/heavy")
 
@@ -27,18 +27,18 @@ class AppUser(HttpUser):
     def load_error_app2(self):
         self.client.get("http://app2:5000/error")
 
-    @task(89)
+    @task(80)
     def load_app3(self):
         self.client.get("http://app3:5000/process")
 
-    @task(11)
+    @task(20)
     def load_error_app3(self):
         self.client.get("http://app3:5000/error")
 
-    @task(30)
+    @task(68)
     def load_app4(self):
         self.client.get("http://app4:5000/process")
 
-    @task(70)
+    @task(32)
     def load_error_app4(self):
         self.client.get("http://app4:5000/error")

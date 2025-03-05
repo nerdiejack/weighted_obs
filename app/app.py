@@ -32,8 +32,8 @@ def error():
 def heavy():
     start_time = time.time()
     count = 0
-    while time.time() - start_time < 3:
-        count += 1
+    while time.time() - start_time < 1:
+        count += 0.2
     return jsonify({"message": "Completed heavy computation", "iterations": count})
 
 @app.route('/db-test')
