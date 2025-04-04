@@ -2,3 +2,4 @@ Flask
 requests
 prometheus-api-client
 kafka-python
+pyyaml

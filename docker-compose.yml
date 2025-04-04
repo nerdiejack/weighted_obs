@@ -139,6 +139,8 @@ services:
       - "5002:5002"
     volumes:
       - ./pgbench_results:/pgbench_results
+      - ./yaml:/yaml
+      - ./health-calculator/templates:/app/templates
     depends_on:
       - prometheus
       - kafka
