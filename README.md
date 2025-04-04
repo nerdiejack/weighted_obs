@@ -2,6 +2,8 @@
 
 ### health_weights.yml Example
 
+File needs to be created under yaml/health_weights.yml
+
 thresholds:
 db_latency: 0.5
 error_rate: 4
